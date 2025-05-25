@@ -107,6 +107,78 @@ def create_emission_gauge(emission_value):
     fig.update_layout(height=300)
     return fig
 
+def calculate_feature_based_breakdown(predictor, sample_data, predicted_emission):
+    """Calculate emission breakdown based on actual feature importances"""
+    try:
+        if predictor.model is None:
+            return None
+        
+        # Get feature importances
+        importances = predictor.model.named_steps['regressor'].feature_importances_
+        feature_names = predictor.model.named_steps['preprocessor'].get_feature_names_out()
+        
+        # Create DataFrame with feature importances
+        feature_importance_df = pd.DataFrame({
+            'feature': feature_names,
+            'importance': importances
+        })
+        
+        # Define category mappings based on feature names
+        category_mappings = {
+            'Transportation': [
+                'Transport_', 'Vehicle', 'Distance', 'Air', 'Traveling'
+            ],
+            'Home Energy': [
+                'Heating', 'Energy', 'TV', 'PC', 'Internet', 'efficiency'
+            ],
+            'Food & Diet': [
+                'Diet_', 'Grocery', 'Cooking_With_'
+            ],
+            'Consumption': [
+                'Clothes', 'Social', 'Monthly', 'Bill'
+            ],
+            'Waste': [
+                'Waste', 'Bag', 'Recycling_'
+            ],
+            'Personal': [
+                'Body', 'Sex_', 'Shower'
+            ]
+        }
+        
+        # Calculate importance by category
+        category_importance = {}
+        for category, keywords in category_mappings.items():
+            total_importance = 0
+            for _, row in feature_importance_df.iterrows():
+                feature_name = row['feature']
+                for keyword in keywords:
+                    if keyword.lower() in feature_name.lower():
+                        total_importance += row['importance']
+                        break
+            category_importance[category] = total_importance
+        
+        # Normalize to get proportions
+        total_importance = sum(category_importance.values())
+        if total_importance == 0:
+            # Fallback to equal distribution
+            num_categories = len(category_importance)
+            for category in category_importance:
+                category_importance[category] = 1.0 / num_categories
+        else:
+            for category in category_importance:
+                category_importance[category] = category_importance[category] / total_importance
+        
+        # Calculate actual emission values by category
+        breakdown_values = {}
+        for category, proportion in category_importance.items():
+            breakdown_values[category] = predicted_emission * proportion
+        
+        return breakdown_values
+        
+    except Exception as e:
+        st.error(f"Error calculating feature-based breakdown: {e}")
+        return None
+
 def main():
     # Header
     st.markdown("""
@@ -251,7 +323,7 @@ def main():
             # Emission value
             st.markdown(f"""
             <div class="metric-card">
-                <h3 style="color: #2E7D32; margin: 0;">Annual Carbon Emission</h3>
+                <h3 style="color: #2E7D32; margin: 0;">Monthly Carbon Emission</h3>
                 <h2 style="color: #1976D2; margin: 10px 0;">{emission:.0f} kg CO₂</h2>
             </div>
             """, unsafe_allow_html=True)
@@ -267,8 +339,8 @@ def main():
         
         with col1:
             # Comparison with averages
-            avg_global = 4800  # Global average per person
-            avg_us = 16000     # US average per person
+            avg_global = 800  # Global average per person
+            avg_us = 2200     # US average per person
             
             st.markdown("#### 🌍 Global Comparison")
             comparison_fig = go.Figure()
@@ -279,7 +351,7 @@ def main():
             ))
             comparison_fig.update_layout(
                 title="Carbon Footprint Comparison",
-                yaxis_title="CO₂ Emissions (kg/year)",
+                yaxis_title="CO₂ Emissions (kg/month)",
                 height=300
             )
             st.plotly_chart(comparison_fig, use_container_width=True)
@@ -287,12 +359,12 @@ def main():
         with col2:
             # Environmental impact
             st.markdown("#### 🌳 Environmental Impact")
-            trees_needed = emission / 22  # A tree absorbs ~22kg CO2/year
+            trees_needed = emission / 411  # ~411 kg CO2 absorbed by one tree per year
             st.metric("Trees needed to offset", f"{trees_needed:.0f} trees")
             
             # Equivalent comparisons
-            car_miles = emission / 0.4  # ~0.4 kg CO2 per mile
-            st.metric("Equivalent car miles", f"{car_miles:.0f} miles")
+            car_km = emission / 0.25  # ~0.25 kg CO2 per km (converted from 0.4 kg/mile)
+            st.metric("Equivalent car kilometers", f"{car_km:.0f} km")
             
             flights = emission / 500  # ~500 kg CO2 per domestic flight
             st.metric("Equivalent domestic flights", f"{flights:.1f} flights")
@@ -328,51 +400,117 @@ def main():
             
             for rec in recommendations:
                 st.markdown(f"• {rec}")
-        
-        # Detailed breakdown
+          # Detailed breakdown
         st.markdown("---")
         st.markdown("### 📈 Emission Category Breakdown")
         
-        # Create a sample breakdown (this would ideally come from the model)
-        categories = ['Transportation', 'Home Energy', 'Food & Diet', 'Consumption', 'Waste']
+        # Calculate breakdown based on actual feature importances
+        sample_data = {
+            'Body Type': body_type,
+            'Sex': sex,
+            'Diet': diet,
+            'How Often Shower': shower_freq,
+            'Heating Energy Source': heating_energy,
+            'Transport': transport,
+            'Vehicle Type': vehicle_type,
+            'Social Activity': social_activity,
+            'Monthly Grocery Bill': grocery_bill,
+            'Frequency of Traveling by Air': air_travel,
+            'Vehicle Monthly Distance Km': vehicle_distance,
+            'Waste Bag Size': waste_bag_size,
+            'Waste Bag Weekly Count': waste_bag_count,
+            'How Long TV PC Daily Hour': tv_hours,
+            'How Many New Clothes Monthly': clothes_monthly,
+            'How Long Internet Daily Hour': internet_hours,
+            'Energy efficiency': energy_efficiency,
+            'Recycling': recycling_str,
+            'Cooking_With': cooking_str
+        }
         
-        # Estimate breakdown based on inputs (simplified logic)
-        transport_emission = vehicle_distance * 0.2 + (air_travel == "very frequently") * 500
-        home_emission = (heating_energy in ["coal", "natural gas"]) * 400 + tv_hours * 10
-        food_emission = {"omnivore": 600, "vegetarian": 400, "pescatarian": 450, "vegan": 300}[diet]
-        consumption_emission = grocery_bill * 2 + clothes_monthly * 50
-        waste_emission = waste_bag_count * 20
+        breakdown_dict = calculate_feature_based_breakdown(predictor, sample_data, emission)
         
-        # Normalize to actual prediction
-        total_estimated = transport_emission + home_emission + food_emission + consumption_emission + waste_emission
-        scale_factor = emission / total_estimated if total_estimated > 0 else 1
-        
-        breakdown_values = [
-            transport_emission * scale_factor,
-            home_emission * scale_factor,
-            food_emission * scale_factor,
-            consumption_emission * scale_factor,
-            waste_emission * scale_factor
-        ]
-        
-        # Create pie chart
-        pie_fig = px.pie(
-            values=breakdown_values,
-            names=categories,
-            title="Carbon Emission Breakdown by Category",
-            color_discrete_sequence=px.colors.qualitative.Set3
-        )
-        pie_fig.update_traces(textposition='inside', textinfo='percent+label')
-        st.plotly_chart(pie_fig, use_container_width=True)
-        
-        # Summary table
-        st.markdown("#### 📋 Emission Summary by Category")
-        breakdown_df = pd.DataFrame({
-            'Category': categories,
-            'Emissions (kg CO₂)': [f"{val:.0f}" for val in breakdown_values],
-            'Percentage': [f"{val/emission*100:.1f}%" for val in breakdown_values]
-        })
-        st.dataframe(breakdown_df, use_container_width=True)
+        if breakdown_dict is not None:
+            categories = list(breakdown_dict.keys())
+            breakdown_values = list(breakdown_dict.values())
+            
+            # Create pie chart
+            pie_fig = px.pie(
+                values=breakdown_values,
+                names=categories,
+                title="Carbon Emission Breakdown by Category (Based on Model Feature Importance)",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            pie_fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(pie_fig, use_container_width=True)
+            
+            # Summary table
+            st.markdown("#### 📋 Emission Summary by Category")
+            breakdown_df = pd.DataFrame({
+                'Category': categories,
+                'Emissions (kg CO₂)': [f"{val:.0f}" for val in breakdown_values],
+                'Percentage': [f"{val/emission*100:.1f}%" for val in breakdown_values]
+            })
+            st.dataframe(breakdown_df, use_container_width=True)
+            
+            # Show top contributing features for transparency
+            with st.expander("🔍 View Top Contributing Features"):
+                try:
+                    importances = predictor.model.named_steps['regressor'].feature_importances_
+                    feature_names = predictor.model.named_steps['preprocessor'].get_feature_names_out()
+                    
+                    feature_importance_df = pd.DataFrame({
+                        'Feature': feature_names,
+                        'Importance': importances
+                    }).sort_values('Importance', ascending=False).head(15)
+                    
+                    st.markdown("**Top 15 Most Important Features (from XGBoost model):**")
+                    st.dataframe(feature_importance_df, use_container_width=True)
+                    
+                except Exception as e:
+                    st.error(f"Could not display feature importance: {e}")
+        else:
+            # Fallback to original method if feature importance calculation fails
+            st.warning("⚠️ Could not calculate breakdown based on feature importance. Using estimated breakdown.")
+            
+            categories = ['Transportation', 'Home Energy', 'Food & Diet', 'Consumption', 'Waste']
+            
+            # Estimate breakdown based on inputs (simplified logic)
+            transport_emission = vehicle_distance * 0.2 + (air_travel == "very frequently") * 500
+            home_emission = (heating_energy in ["coal", "natural gas"]) * 400 + tv_hours * 10
+            food_emission = {"omnivore": 600, "vegetarian": 400, "pescatarian": 450, "vegan": 300}[diet]
+            consumption_emission = grocery_bill * 2 + clothes_monthly * 50
+            waste_emission = waste_bag_count * 20
+            
+            # Normalize to actual prediction
+            total_estimated = transport_emission + home_emission + food_emission + consumption_emission + waste_emission
+            scale_factor = emission / total_estimated if total_estimated > 0 else 1
+            
+            breakdown_values = [
+                transport_emission * scale_factor,
+                home_emission * scale_factor,
+                food_emission * scale_factor,
+                consumption_emission * scale_factor,
+                waste_emission * scale_factor
+            ]
+            
+            # Create pie chart
+            pie_fig = px.pie(
+                values=breakdown_values,
+                names=categories,
+                title="Carbon Emission Breakdown by Category (Estimated)",
+                color_discrete_sequence=px.colors.qualitative.Set3
+            )
+            pie_fig.update_traces(textposition='inside', textinfo='percent+label')
+            st.plotly_chart(pie_fig, use_container_width=True)
+            
+            # Summary table
+            st.markdown("#### 📋 Emission Summary by Category")
+            breakdown_df = pd.DataFrame({
+                'Category': categories,
+                'Emissions (kg CO₂)': [f"{val:.0f}" for val in breakdown_values],
+                'Percentage': [f"{val/emission*100:.1f}%" for val in breakdown_values]
+            })
+            st.dataframe(breakdown_df, use_container_width=True)
 
 if __name__ == "__main__":
     main()
