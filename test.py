@@ -37,13 +37,13 @@ class CarbonEmissionPredictor:
             try:
                 with open(self.model_save_path, 'rb') as f:
                     self.model = pickle.load(f)
-                print(f"✅ Loaded existing model from {self.model_save_path}")
+                print(f"Loaded existing model from {self.model_save_path}")
                 return True
             except Exception as e:
-                print(f"❌ Error loading model: {e}")
+                print(f"Error loading model: {e}")
                 return False
         else:
-            print(f"❌ No existing model found at {self.model_save_path}")
+            print(f"No existing model found at {self.model_save_path}")
             return False
 
     def load_and_explore_data(self):
@@ -278,7 +278,7 @@ class CarbonEmissionPredictor:
             return prediction[0] if len(prediction) == 1 else prediction
             
         except Exception as e:
-            print(f"❌ Error making prediction: {e}")
+            print(f"Error making prediction: {e}")
             print("This might be due to missing features or incorrect data format.")
             print("Please ensure your sample data contains all required features.")
             return None
@@ -301,13 +301,13 @@ class CarbonEmissionPredictor:
         
         # Check if model exists and load it (unless force_retrain is True)
         if not self.force_retrain and self.load_existing_model():
-            print("🚀 Using existing trained model. Set force_retrain=True to retrain.")
+            print("Using existing trained model. Set force_retrain=True to retrain.")
             # Load data for feature preprocessing consistency
             self.data = pd.read_csv(self.csv_path)
             self.preprocess_data()  # Need this for predict_new_sample to work
             return self.model
         
-        print("🔄 Training new model...")
+        print("Training new model...")
         self.load_and_explore_data()
         self.preprocess_data()
         self.split_data()
@@ -316,11 +316,11 @@ class CarbonEmissionPredictor:
         self.feature_importance_analysis()
         self.visualize_results()
         
-        print("\n" + "💾 Saving XGBoost model...")
+        print("\n" + "Saving XGBoost model...")
         if self.save_model():
-            print("✅ XGBoost model saved successfully for future use!")
+            print("XGBoost model saved successfully for future use!")
         else:
-            print("❌ Failed to save model.")
+            print("Failed to save model.")
         
         print("\n" + "=" * 60)
         print("PIPELINE COMPLETED SUCCESSFULLY!")
