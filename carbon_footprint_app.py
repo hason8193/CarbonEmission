@@ -242,7 +242,7 @@ def main():
         waste_bag_size = st.selectbox("Waste Bag Size", 
                                     ["small", "medium", "large", "extra large"])
         waste_bag_count = st.number_input("Waste Bags per Week", 
-                                        min_value=1, max_value=10, value=3, step=1)
+                                        min_value=0, max_value=10, value=3, step=1)
           # Recycling options
         st.markdown("**Recycling Materials:**")
         recycling_options = []
