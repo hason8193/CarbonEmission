@@ -200,22 +200,28 @@ def main():
         diet = st.selectbox("Diet", ["omnivore", "vegetarian", "vegan", "pescatarian"])
         shower_freq = st.selectbox("How Often Do You Shower?", 
                                   ["daily", "twice a day", "more frequently", "less frequently"])
-    
-    # Home & Energy
+      # Home & Energy
     with st.sidebar.expander("🏠 Home & Energy", expanded=True):
         heating_energy = st.selectbox("Heating Energy Source", 
                                     ["natural gas", "electricity", "wood", "coal"])
-        energy_efficiency = st.selectbox("Energy Efficiency Awareness", 
+        energy_efficiency = st.selectbox("Do You Purchase Energy Efficient Devices?", 
                                        ["Yes", "No", "Sometimes"])
-    
-    # Transportation
+      # Transportation
     with st.sidebar.expander("🚗 Transportation", expanded=True):
         transport = st.selectbox("Primary Transport", 
                                 ["private", "public", "walk/bicycle"])
-        vehicle_type = st.selectbox("Vehicle Type", 
-                                  ["petrol", "diesel", "hybrid", "electric", "lpg", ""])
-        vehicle_distance = st.number_input("Vehicle Monthly Distance (Km)", 
-                                         min_value=0, max_value=15000, value=1000, step=50)
+        
+        # Only show vehicle type and distance if using private transport
+        if transport == "private":
+            vehicle_type = st.selectbox("Vehicle Type", 
+                                      ["petrol", "diesel", "hybrid", "electric", "lpg"])
+            vehicle_distance = st.number_input("Vehicle Monthly Distance (Km)", 
+                                             min_value=0, max_value=15000, value=1000, step=50)
+        else:
+            vehicle_type = ""  # Empty for public/walk/bicycle
+            vehicle_distance = 0  # No personal vehicle distance
+            st.info("🚶 No personal vehicle needed for your transport choice!")
+        
         air_travel = st.selectbox("Frequency of Air Travel", 
                                 ["never", "rarely", "frequently", "very frequently"])
     
@@ -237,34 +243,43 @@ def main():
                                     ["small", "medium", "large", "extra large"])
         waste_bag_count = st.number_input("Waste Bags per Week", 
                                         min_value=1, max_value=10, value=3, step=1)
-        
-        # Recycling options
+          # Recycling options
         st.markdown("**Recycling Materials:**")
         recycling_options = []
-        if st.checkbox("Paper"):
+        paper_recycling = st.checkbox("Paper")
+        plastic_recycling = st.checkbox("Plastic")
+        glass_recycling = st.checkbox("Glass")
+        metal_recycling = st.checkbox("Metal")
+        
+        if paper_recycling:
             recycling_options.append("Paper")
-        if st.checkbox("Plastic"):
+        if plastic_recycling:
             recycling_options.append("Plastic")
-        if st.checkbox("Glass"):
+        if glass_recycling:
             recycling_options.append("Glass")
-        if st.checkbox("Metal"):
+        if metal_recycling:
             recycling_options.append("Metal")
         
         recycling_str = str(recycling_options) if recycling_options else "[]"
-    
-    # Cooking Methods
+      # Cooking Methods
     with st.sidebar.expander("🍳 Cooking Methods", expanded=True):
         st.markdown("**Cooking Equipment Used:**")
         cooking_options = []
-        if st.checkbox("Stove"):
+        stove_cooking = st.checkbox("Stove")
+        oven_cooking = st.checkbox("Oven")
+        microwave_cooking = st.checkbox("Microwave")
+        grill_cooking = st.checkbox("Grill")
+        airfryer_cooking = st.checkbox("Air Fryer")
+        
+        if stove_cooking:
             cooking_options.append("Stove")
-        if st.checkbox("Oven"):
+        if oven_cooking:
             cooking_options.append("Oven")
-        if st.checkbox("Microwave"):
+        if microwave_cooking:
             cooking_options.append("Microwave")
-        if st.checkbox("Grill"):
+        if grill_cooking:
             cooking_options.append("Grill")
-        if st.checkbox("Air Fryer"):
+        if airfryer_cooking:
             cooking_options.append("Airfryer")
         
         cooking_str = str(cooking_options) if cooking_options else "[]"
@@ -356,7 +371,7 @@ def main():
         with col2:
             # Environmental impact
             st.markdown("#### 🌳 Environmental Impact")
-            trees_needed = emission / 411  # ~411 kg CO2 absorbed by one tree per year
+            trees_needed = emission / 22  # ~411 kg CO2 absorbed by one tree per month
             st.metric("Trees needed to offset", f"{trees_needed:.0f} trees")
             
             # Equivalent comparisons
@@ -365,37 +380,98 @@ def main():
             
             flights = emission / 500  # ~500 kg CO2 per domestic flight
             st.metric("Equivalent domestic flights", f"{flights:.1f} flights")
-        
         with col3:
             # Recommendations
             st.markdown("#### 💡 Recommendations")
             
-            if emission > 3000:
+            # Generate personalized recommendations based on actual user inputs
+            recommendations = []
+            
+            # Transportation recommendations
+            if transport == "private":
+                if vehicle_type in ["petrol", "diesel"]:
+                    recommendations.append("🚗 Consider switching to hybrid or electric vehicle")
+                if vehicle_distance > 2000:
+                    recommendations.append("🚲 Try using public transport for some trips")
+                elif vehicle_distance > 1500:
+                    recommendations.append("🚶 Consider walking/cycling for short distances")
+            elif transport == "public":
+                recommendations.append("🌟 Great job using public transport!")
+            
+            if air_travel in ["frequently", "very frequently"]:
+                recommendations.append("✈️ Consider reducing air travel or carbon offsetting")
+            
+            # Diet recommendations
+            if diet == "omnivore":
+                recommendations.append("🥗 Try reducing meat consumption or having plant-based days")
+            elif diet == "pescatarian":
+                recommendations.append("🌱 Consider more plant-based meals")
+            elif diet in ["vegetarian", "vegan"]:
+                recommendations.append("🌟 Excellent diet choice for the environment!")
+            
+            # Energy recommendations
+            if heating_energy in ["coal", "natural gas"]:
+                recommendations.append("⚡ Consider switching to renewable heating options")
+            if energy_efficiency in ["No", "Sometimes"]:
+                recommendations.append("💡 Invest in energy-efficient appliances")
+            
+            # Screen time recommendations
+            if tv_hours > 6:
+                recommendations.append("📺 Reduce TV/PC time to save energy")
+            if internet_hours > 8:
+                recommendations.append("📱 Consider reducing daily internet usage")
+            
+            # Consumption recommendations
+            if grocery_bill > 300:
+                recommendations.append("🛒 Consider local/seasonal food to reduce transport emissions")
+            if clothes_monthly > 5:
+                recommendations.append("👕 Buy fewer new clothes or choose sustainable brands")
+            
+            # Waste recommendations
+            if waste_bag_size in ["large", "extra large"] or waste_bag_count > 4:
+                recommendations.append("🗑️ Try to reduce waste generation")            # Check recycling
+            if not any([paper_recycling, plastic_recycling, glass_recycling, metal_recycling]):
+                recommendations.append("♻️ Start recycling paper, plastic, glass, and metal")
+            elif len([x for x in [paper_recycling, plastic_recycling, glass_recycling, metal_recycling] if x]) < 3:
+                recommendations.append("♻️ Expand recycling to more material types")
+            
+            # Shower frequency recommendations
+            if shower_freq in ["twice a day", "more frequently"]:
+                recommendations.append("🚿 Consider reducing shower frequency to save water and energy")
+            
+            # Social activity recommendations
+            if social_activity == "often" and grocery_bill > 250:
+                recommendations.append("🏠 Try more home cooking instead of dining out")
+            
+            # Body type and diet combination
+            if body_type in ["overweight", "obese"] and diet == "omnivore":
+                recommendations.append("🥗 Consider a plant-based diet for health and environment")
+              # Cooking method recommendations
+            if (stove_cooking and oven_cooking and not microwave_cooking):
+                recommendations.append("🍳 Use microwave more often - it's more energy efficient")
+            elif (oven_cooking and not microwave_cooking and not airfryer_cooking):
+                recommendations.append("🍳 Consider air fryer or microwave for smaller meals")
+            
+            # Combined high-impact recommendations
+            if (transport == "private" and vehicle_distance > 2000 and 
+                air_travel in ["frequently", "very frequently"]):
+                recommendations.append("🌍 Transportation is your biggest impact - focus here first")
+            
+            # If very low emissions, give positive reinforcement
+            if emission < 1500:
+                recommendations.insert(0, "🌟 Excellent! You have a very low carbon footprint!")
+                recommendations.append("📢 Share your eco-friendly practices with others")
+            
+            # Ensure we have at least some recommendations
+            if not recommendations:
                 recommendations = [
-                    "🚗 Consider using public transport more",
-                    "⚡ Switch to renewable energy",
-                    "🥗 Reduce meat consumption",
-                    "♻️ Increase recycling efforts",
-                    "🏠 Improve home energy efficiency"
-                ]
-            elif emission > 2000:
-                recommendations = [
-                    "🚲 Use bicycle for short trips",
-                    "💡 Use energy-efficient appliances",
-                    "♻️ Expand recycling to all materials",
-                    "🌱 Consider plant-based meals",
-                    "📱 Reduce screen time"
-                ]
-            else:
-                recommendations = [
-                    "🌟 Great job! Keep it up!",
-                    "📢 Share your practices with others",
-                    "🌱 Consider carbon offset programs",
-                    "📚 Continue learning about sustainability",
-                    "👥 Advocate for environmental policies"
+                    "🌱 Continue your eco-friendly lifestyle!",
+                    "📚 Keep learning about sustainability",
+                    "🌍 Consider carbon offset programs"
                 ]
             
-            for rec in recommendations:
+            # Limit to top 5 recommendations
+            for rec in recommendations[:5]:
                 st.markdown(f"• {rec}")
           # Detailed breakdown
         st.markdown("---")
