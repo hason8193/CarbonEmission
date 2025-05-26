@@ -371,7 +371,7 @@ def main():
         with col2:
             # Environmental impact
             st.markdown("#### 🌳 Environmental Impact")
-            trees_needed = emission / 22  # ~411 kg CO2 absorbed by one tree per month
+            trees_needed = emission / 22
             st.metric("Trees needed to offset", f"{trees_needed:.0f} trees")
             
             # Equivalent comparisons
