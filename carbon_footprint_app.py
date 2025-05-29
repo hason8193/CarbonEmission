@@ -212,7 +212,7 @@ def main():
             vehicle_type = st.selectbox("Vehicle Type", 
                                       ["petrol", "diesel", "hybrid", "electric", "lpg"])
             vehicle_distance = st.number_input("Vehicle Monthly Distance (Km)", 
-                                             min_value=0, max_value=15000, value=1000, step=50)
+                                             min_value=0, max_value=15000, value=100, step=50)
         else:
             vehicle_type = ""  # Empty for public/walk/bicycle
             vehicle_distance = 0  # No personal vehicle distance
