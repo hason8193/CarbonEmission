@@ -121,24 +121,25 @@ def calculate_feature_based_breakdown(predictor, sample_data, predicted_emission
         })
         
         # Define category mappings based on feature names
+                # Define category mappings based on feature names
         category_mappings = {
             'Transportation': [
-                'Transport_', 'Vehicle', 'Distance', 'Air', 'Traveling'
+                'Transport_', 'Vehicle Type_', 'Vehicle Monthly Distance', 'Frequency of Traveling by Air_'
             ],
             'Home Energy': [
-                'Heating', 'Energy', 'TV', 'PC', 'Internet', 'efficiency'
+                'Heating Energy Source_', 'Energy efficiency_', 'How Long TV PC Daily Hour', 'How Long Internet Daily Hour'
             ],
             'Food & Diet': [
-                'Diet_', 'Grocery', 'Cooking_With_'
+                'Diet_', 'Monthly Grocery Bill', 'Cooking_With_'
             ],
             'Consumption': [
-                'Clothes', 'Social', 'Monthly', 'Bill'
+                'How Many New Clothes Monthly', 'Social Activity_'
             ],
             'Waste': [
-                'Waste', 'Bag', 'Recycling_'
+                'Waste Bag Size_', 'Waste Bag Weekly Count', 'Recycling_'
             ],
             'Personal': [
-                'Body', 'Sex_', 'Shower'
+                'Body Type_', 'Sex_', 'How Often Shower_'
             ]
         }
         
